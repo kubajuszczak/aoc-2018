@@ -50,9 +50,6 @@ public class Day09 {
                 marbles.addLast(marbles.removeFirst());
                 marbles.addLast(marble);
             }
-            if (marble % 100000 == 0) {
-                System.out.println(Instant.now() + " " + marble);
-            }
         }
         System.out.println(Arrays.stream(playerScores).max());
     }
