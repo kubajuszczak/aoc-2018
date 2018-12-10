@@ -3,8 +3,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Day01 {
 
@@ -30,16 +30,16 @@ public class Day01 {
     }
 
     private static void part2() throws IOException {
-        List<String> lines = Files.readAllLines(input);
+        List<Integer> lines = Files.lines(input).map(Integer::parseInt).collect(Collectors.toList());
 
         int current = 0;
         int index = 0;
 
-        List<Integer> output = new ArrayList<>();
+        HashSet<Integer> output = new HashSet<>(130000);
         output.add(current);
 
         while(true){
-            int value = Integer.parseInt(lines.get(index));
+            int value = lines.get(index);
             current += value;
 
             if(output.contains(current)){
