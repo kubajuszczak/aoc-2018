@@ -26,9 +26,9 @@ public class Day06 {
                 .map(s -> new Point(Integer.parseInt(s.substring(0, s.indexOf(","))), Integer.parseInt(s.substring(s.indexOf(" ") + 1))))
                 .collect(Collectors.toList());
 
-        HashSet<Integer> areas = new HashSet<>(part1(list, -1000, 1001));
+        HashSet<Integer> areas = new HashSet<>(part1(list, 0, 401));
         // do it again with a larger grid to exclude infinite areas
-        areas.retainAll(part1(list, -2000, 2001));
+        areas.retainAll(part1(list, -100, 501));
         System.out.println("part 1:");
         System.out.println(areas.stream().max(Integer::compareTo));
 
@@ -67,9 +67,9 @@ public class Day06 {
 
     private static long part2(List<Point> input) {
         return IntStream
-                .range(-2000, 2001)
+                .range(0, 401)
                 .boxed()
-                .flatMap(x -> IntStream.range(-2000, 2001)
+                .flatMap(x -> IntStream.range(0, 401)
                         .mapToObj(y -> new Point(x, y)))
                 // calculate distance to each of the points in the list
                 .map(gridPoint ->
