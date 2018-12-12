@@ -28,7 +28,10 @@ public class Day12 {
         Map<List<Boolean>, Boolean> generationRules = createGenerationRules(lines.subList(2, lines.size()));
         State state = new State(plantState, offset);
 
+        System.out.println("Part 1");
         part1(state, generationRules);
+        System.out.println("------");
+        System.out.println("Part 2");
         part2(state, generationRules);
     }
 
@@ -70,18 +73,23 @@ public class Day12 {
     private static void part2(State state, Map<List<Boolean>, Boolean> generationRules) {
 
         State currentState = state;
-
-        for (long i = 1; i <= 200L; i++) {
+        State previousState;
+        long generation = 0L;
+        do {
+            previousState = currentState;
             currentState = nextGeneration(currentState, generationRules);
-            System.out.println(i + currentState.toString() + getSum(currentState));
-        }
+            generation++;
+            System.out.println(String.format("%1$3s", generation) + currentState.toString() + getSum(currentState));
 
-        // the plant pots reach steady state by generation 128
-        // the value at generation 1000 is 80212
-        // each generation increases the total sum by 78
+        } while (!new ArrayList<>(previousState.getPlantPots()).equals(new ArrayList<>(currentState.getPlantPots())));
 
-        BigInteger a = new BigInteger("49999999000").multiply(BigInteger.valueOf(78)).add(BigInteger.valueOf(80212));
-        System.out.println(a);
+        int previousSum = getSum(previousState);
+        int currentSum = getSum(currentState);
+
+        int sumIncrement = currentSum - previousSum;
+
+        BigInteger result = BigInteger.valueOf(50_000_000_000L - generation).multiply(BigInteger.valueOf(sumIncrement)).add(BigInteger.valueOf(currentSum));
+        System.out.println(result);
     }
 
     private static State nextGeneration(State state, Map<List<Boolean>, Boolean> generationRules) {
