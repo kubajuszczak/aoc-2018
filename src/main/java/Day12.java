@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class Day12 {
 
@@ -20,26 +21,21 @@ public class Day12 {
 
     public static void main(String[] args) throws IOException {
         List<String> lines = Files.readAllLines(input);
+        String initialConditions = lines.get(0).substring(15);
 
         int offset = 10;
+        ArrayDeque<Boolean> plantState = createInitialConditions(initialConditions, offset);
+        Map<List<Boolean>, Boolean> generationRules = createGenerationRules(lines.subList(2, lines.size()));
+        State state = new State(plantState, offset);
 
-        String initialConditions = lines.get(0).substring(15);
-        ArrayDeque<Boolean> plantState = new ArrayDeque<>(Collections.nCopies(offset, Boolean.FALSE));
-        List<Boolean> plantState2 = new ArrayList<>(Collections.nCopies(150, Boolean.FALSE));
+        part1(state, generationRules);
+        part2(state, generationRules);
+    }
 
-        for (int i = 0; i < initialConditions.length(); i++) {
-            plantState.add(initialConditions.charAt(i) == '#');
-            plantState2.set(i+offset, initialConditions.charAt(i)=='#');
-        }
-
-        plantState.addLast(false);
-        plantState.addLast(false);
-        plantState.addLast(false);
-        plantState.addLast(false);
-        plantState.addLast(false);
-
+    private static Map<List<Boolean>, Boolean> createGenerationRules(List<String> lines) {
         Map<List<Boolean>, Boolean> generationRules = new HashMap<>();
-        for (String rule : lines.subList(2, lines.size())) {
+
+        for (String rule : lines) {
             List<Boolean> state = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
                 state.add(rule.charAt(i) == '#');
@@ -48,59 +44,38 @@ public class Day12 {
 
             generationRules.put(state, result);
         }
-
-//        part1(plantState2, generationRules, offset);
-        part2(plantState, generationRules, offset);
+        return generationRules;
     }
 
-    private static void part1(List<Boolean> initialState, Map<List<Boolean>, Boolean> generationRules, int offset){
+    private static ArrayDeque<Boolean> createInitialConditions(String initialConditions, int offset) {
+        ArrayDeque<Boolean> plantState = new ArrayDeque<>(Collections.nCopies(offset, Boolean.FALSE));
+
+        for (int i = 0; i < initialConditions.length(); i++) {
+            plantState.add(initialConditions.charAt(i) == '#');
+        }
+        plantState.addAll(Collections.nCopies(offset, Boolean.FALSE));
+        return plantState;
+    }
+
+    private static void part1(State state, Map<List<Boolean>, Boolean> generationRules) {
+        State currentState = state;
+
         for (int i = 1; i <= 20; i++) {
-            initialState = nextGeneration(initialState, generationRules);
+            currentState = nextGeneration(currentState, generationRules);
         }
 
-        printState(initialState, offset, 20);
-        System.out.println(offset);
-        System.out.println(getSum(initialState, offset));
+        System.out.println(currentState.toString() + getSum(currentState));
     }
 
-    private static void part2(ArrayDeque<Boolean> initialState, Map<List<Boolean>, Boolean> generationRules, int initialOffset){
+    private static void part2(State state, Map<List<Boolean>, Boolean> generationRules) {
 
-        ArrayDeque<Boolean> currentState = initialState;
-        int currentOffset = initialOffset;
+        State currentState = state;
 
-        for (long i = 1; i <= 1000L; i++) {
+        for (long i = 1; i <= 200L; i++) {
             currentState = nextGeneration(currentState, generationRules);
-
-            int emptyPotCount = 0;
-            Iterator<Boolean> potIterator = currentState.iterator();
-            while(!potIterator.next()){
-                emptyPotCount++;
-            }
-
-            while(emptyPotCount > 10){
-                currentState.removeFirst();
-                emptyPotCount--;
-                currentOffset--;
-            }
-
-            while (emptyPotCount < 10) {
-                currentState.addFirst(false);
-                emptyPotCount++;
-                currentOffset++;
-            }
-
-            emptyPotCount = 0;
-            potIterator = currentState.descendingIterator();
-            while(!potIterator.next()){
-                emptyPotCount++;
-            }
-
-            while(emptyPotCount < 10){
-                currentState.addLast(false);
-                emptyPotCount++;
-            }
-            printState(currentState, currentOffset, i);
+            System.out.println(i + currentState.toString() + getSum(currentState));
         }
+
         // the plant pots reach steady state by generation 128
         // the value at generation 1000 is 80212
         // each generation increases the total sum by 78
@@ -109,68 +84,91 @@ public class Day12 {
         System.out.println(a);
     }
 
-    private static void printState(Collection<Boolean> plantState, int offset, long generation) {
-        System.out.println(generation+plantState
-                .toString()
-                .replaceAll("false", ".")
-                .replaceAll("true", "#")
-                .replaceAll("[, ]", "") + getSum(plantState, offset)
-                + ", offset "+offset
-        );
-    }
+    private static State nextGeneration(State state, Map<List<Boolean>, Boolean> generationRules) {
+        ArrayDeque<Boolean> nextState = new ArrayDeque<>(state.getPlantPots().size());
+        int currentOffset = state.getOffset();
 
-    private static List<Boolean> nextGeneration(List<Boolean> plantState, Map<List<Boolean>, Boolean> generationRules) {
-        List<Boolean> nextState = new ArrayList<>(Collections.nCopies(plantState.size()+2, Boolean.FALSE));
-        for (int i = 2; i < plantState.size() - 2; i++) {
-            nextState.set(i, generationRules.get(plantState.subList(i - 2, i + 3)));
-        }
+        nextState.addFirst(false);
+        nextState.addFirst(false);
 
-        return nextState;
-    }
-
-    private static ArrayDeque<Boolean> nextGeneration(ArrayDeque<Boolean> plantState, Map<List<Boolean>, Boolean> generationRules) {
-//        List<Boolean> nextState = new ArrayList<>(Collections.nCopies(plantState.size()+2, Boolean.FALSE));
-        ArrayDeque<Boolean> nextState = new ArrayDeque<>(plantState.size() + 2);
+        Iterator<Boolean> iterator = state.getPlantPots().iterator();
 
         ArrayDeque<Boolean> rollingState = new ArrayDeque<>();
-        rollingState.add(plantState.removeFirst());
-        rollingState.add(plantState.removeFirst());
-        rollingState.add(plantState.removeFirst());
-        rollingState.add(plantState.removeFirst());
-        rollingState.add(plantState.removeFirst());
+        IntStream.range(0, 5).forEach(n -> rollingState.add(iterator.next()));
 
         nextState.add(generationRules.get(new ArrayList<>(rollingState)));
-
-        while(plantState.size() > 0){
+        while (iterator.hasNext()) {
             rollingState.removeFirst();
-            rollingState.add(plantState.removeFirst());
+            rollingState.add(iterator.next());
             nextState.add(generationRules.get(new ArrayList<>(rollingState)));
         }
 
-        nextState.addFirst(false);
-        nextState.addFirst(false);
-        return nextState;
-    }
 
-    private static int getSum(List<Boolean> plantState, int offset) {
-        int sum = 0;
-        for (int i = 0; i < plantState.size(); i++) {
-            if (plantState.get(i)) {
-                sum += (i - offset);
-            }
+        Iterator<Boolean> leftIterator = nextState.iterator();
+        int leftEmptyPots = 0;
+        while (!leftIterator.next()) {
+            leftEmptyPots++;
         }
-        return sum;
+
+        if(leftEmptyPots < 10){
+            IntStream.range(0, 10 - leftEmptyPots).forEach(n -> nextState.addFirst(false));
+            currentOffset += 10 - leftEmptyPots;
+        } else if(leftEmptyPots > 10){
+            IntStream.range(0, leftEmptyPots - 10).forEach(n -> nextState.removeFirst());
+            currentOffset -= leftEmptyPots - 10;
+        }
+
+        Iterator<Boolean> rightIterator = nextState.descendingIterator();
+        int rightEmptyPots = 0;
+        while (!rightIterator.next()) {
+            rightEmptyPots++;
+        }
+
+        if(rightEmptyPots < 10){
+            IntStream.range(0, 10 - rightEmptyPots).forEach(n -> nextState.addLast(false));
+        } else if(rightEmptyPots > 10){
+            IntStream.range(0, rightEmptyPots - 10).forEach(n -> nextState.removeLast());
+        }
+
+        return new State(nextState, currentOffset);
     }
 
-    private static int getSum(Collection<Boolean> plantState, int offset) {
-        Iterator<Boolean> iterator= plantState.iterator();
+    private static int getSum(State state) {
+        Iterator<Boolean> iterator = state.getPlantPots().iterator();
         int sum = 0;
-        for (int i = 0; i < plantState.size(); i++) {
+        for (int i = 0; i < state.getPlantPots().size(); i++) {
             boolean value = iterator.next();
             if (value) {
-                sum += (i - offset);
+                sum += (i - state.getOffset());
             }
         }
         return sum;
+    }
+}
+
+class State {
+    private final ArrayDeque<Boolean> plantPots;
+    private final int offset;
+
+    State(ArrayDeque<Boolean> plantPots, int offset) {
+        this.plantPots = plantPots;
+        this.offset = offset;
+    }
+
+    ArrayDeque<Boolean> getPlantPots() {
+        return plantPots;
+    }
+
+    int getOffset() {
+        return offset;
+    }
+
+    @Override
+    public String toString() {
+        return this.getPlantPots()
+                .toString()
+                .replaceAll("false", ".")
+                .replaceAll("true", "#")
+                .replaceAll("[, ]", "");
     }
 }
